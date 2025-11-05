@@ -1,0 +1,49 @@
+﻿.tournament {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+}
+
+/* General bracket styling */
+.bracket {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+/* Match box */
+.match {
+    position: relative;
+    padding: 10px 20px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+/* Connectors for LEFT side */
+.bracket.left .match::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    top: 50%;
+    width: 30px;
+    height: 2px;
+    background: #333;
+}
+
+/* Connectors for RIGHT side (mirrored) */
+.bracket.right .match::after {
+    content: "";
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    width: 30px;
+    height: 2px;
+    background: #333;
+}
+
+/* Final in middle */
+.final-round {
+    text-align: center;
+}

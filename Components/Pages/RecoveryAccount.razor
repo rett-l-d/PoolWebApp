@@ -1,0 +1,72 @@
+﻿@page "/recovery"
+@rendermode InteractiveServer
+
+@using PoolApp.Application.Interfaces;
+@using PoolApp.Domain.EntitiesUsers;
+
+@inject IUsersRepo UsersRepo
+
+
+<h3>Recover Account</h3>
+
+<p>@verified</p>
+
+@if (qrImageBase64 == null)
+{
+    <div style="display: flex; flex-direction: column; width: 200px; gap: 16px;">
+        <input @bind="userPhone" placeholder="Phone" />
+        <input @bind="userRecoveryCode" placeholder="One Time Recovery Code" />
+        <button style="width: 80px;" @onclick="RetreiveUser">Recover</button>
+    </div>
+}
+else
+{
+    <h4>Scan this code in any OTP Authenticator:</h4>
+    <img src="@qrImageBase64" width="200" height="200" />
+    <p>Or enter this secret manually: <strong>@user.AuthenticatorSecret</strong></p>
+}
+
+
+
+
+
+@code {
+    private string? userRecoveryCode;
+    private string? userPhone;
+    private string? qrImageBase64;
+   
+
+    private string? verified;
+    private string? resultClass;
+
+    private Users user = new();
+
+    private async Task RetreiveUser()
+    {
+        user = await UsersRepo.GetByPhoneAsync(userPhone);
+
+        if (user == null)
+        {
+            verified = "❌ No user with that phone";
+            resultClass = "text-danger";
+            return;
+        }
+
+        if (!(user.RecoveryCode == userRecoveryCode))
+        {
+            verified = "❌ Invalid recovery code";
+            resultClass = "text-danger";
+            return;
+        }
+
+        qrImageBase64 = await UsersRepo.SetupAuthenticatorAsync(user);
+
+        verified = "✅ Recovery code valid!";
+        resultClass = "text-success";
+
+        user.RecoveryCode = null;
+        await UsersRepo.UpdateUserInfo(user);
+
+    }
+
+}

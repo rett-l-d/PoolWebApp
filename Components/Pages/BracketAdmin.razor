@@ -1,0 +1,198 @@
+﻿@page "/bracketadmin"
+@rendermode InteractiveServer
+@using PoolApp.Infrastructure.Data;
+@using PoolApp.Domain.EntitiesBrackets;
+@using PoolApp.Application.Interfaces;
+@using Microsoft.EntityFrameworkCore;
+
+@inject IGamesBracketsRepo GamesBracketsRepo
+@inject PoolApp.Services.UserState userState
+@inject NavigationManager NavManager
+
+<button class="save-btn" @onclick="SaveResults">Save Scores</button>
+<div style="height:20px;"></div>
+
+<h2 class="text-center">Tournament Bracket</h2>
+
+<div class="bracket-container">
+    <!-- LEFT side -->
+    <div class="bracket left">
+        @for (int round = 0; round < RoundsLeft.Count; round++)
+        {
+            <div class="round">
+                @foreach (var match in RoundsLeft[round])
+                {
+                    <div class="match">
+                        <div class="team">
+                            @match.HomeTeam.Name <input type="text"
+                            @bind="match.HomeScore" class="score-input" />
+
+                        </div>
+                        <div class="team">
+                            @match.AwayTeam.Name <input type="text"
+                            @bind="match.AwayScore" class="score-input" />
+
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- FINAL in the center -->
+    <div class="final-match-container">
+        <p class="match-label">Final Match</p>
+        <div class="final-match">
+            <div class="match">
+                <div class="team">
+                    @RoundFinal[0].HomeTeam.Name
+                    <input type="text" @bind="RoundFinal[0].AwayScore" class="score-input" />
+
+                </div>
+                <div class="team">
+                    @RoundFinal[0].AwayTeam.Name
+                    <input type="text" @bind="RoundFinal[0].HomeScore" class="score-input" />
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT side -->
+    <div class="bracket right">
+        @for (int round = 0; round < RoundsRight.Count; round++)
+        {
+            <div class="round">
+                @foreach (var match in RoundsRight[round])
+                {
+                    <div class="match">
+                        <div class="team">
+                            @match.HomeTeam.Name
+                            <input type="text" @bind="match.HomeScore" class="score-input" />
+
+                        </div>
+                        <div class="team">
+                            @match.AwayTeam.Name
+                            <input type="text" @bind="match.AwayScore" class="score-input" />
+
+                        </div>
+                    </div>
+
+                }
+            </div>
+        }
+    </div>
+</div>
+
+
+@if (IsModalOpen)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h4>Sucess</h4>
+            <p>Scores Saved</p>
+            <button class="save-btn" @onclick="CloseModal">Close</button>
+        </div>
+    </div>
+}
+
+@code {
+
+
+    private List<List<GamesBrackets>> RoundsLeft = new List<List<GamesBrackets>>();
+    private List<List<GamesBrackets>> RoundsRight = new List<List<GamesBrackets>>();
+    private List<GamesBrackets> RoundFinal = new List<GamesBrackets>();
+
+    private bool IsModalOpen;
+    private void CloseModal() => IsModalOpen = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (userState.userid == 0)
+        {
+            NavManager.NavigateTo("/userauth");
+        }
+        else
+        {
+            PopulateData();
+        }
+
+
+    }
+
+    private async void PopulateData()
+    {
+       
+
+        // Get rounds
+        var allrounds = await GamesBracketsRepo.GetAllGames()
+                    .Include(c => c.HomeTeam)
+                    .Include(c => c.AwayTeam).ToListAsync();
+
+        
+        var rounds = allrounds
+                       .Select(d => new GamesBrackets
+                           {
+                               id = d.id,
+                               BracketID = d.BracketID,
+                               HomeTeam = d.HomeTeam,
+                               AwayTeam = d.AwayTeam,
+                               HomeTeamID = d.HomeTeamID,
+                               AwayTeamID = d.AwayTeamID,
+                               HomeScore = d.HomeScore,
+                               AwayScore = d.AwayScore,
+                               MatchDateTime = d.MatchDateTime
+                               
+                           });
+
+
+
+        var round16_left = rounds.Where(c => c.BracketID == "16L").ToList();
+        var round16_right = rounds.Where(c => c.BracketID == "16R").ToList();
+
+        var round8_left = rounds.Where(c => c.BracketID == "8L").ToList();
+        var round8_right = rounds.Where(c => c.BracketID == "8R").ToList();
+
+        var round4_left = rounds.Where(c => c.BracketID == "4L").ToList();
+        var round4_right = rounds.Where(c => c.BracketID == "4R").ToList();
+
+        var round_final = rounds.Where(c => c.BracketID == "2").ToList();
+
+
+        // Store rounds
+        RoundsLeft.Add(round16_left);
+        RoundsLeft.Add(round8_left);
+        RoundsLeft.Add(round4_left);
+
+        RoundsRight.Add(round16_right);
+        RoundsRight.Add(round8_right);
+        RoundsRight.Add(round4_right);
+
+
+        RoundFinal = round_final;
+
+    }
+
+    private async Task SaveResults()
+    {
+        for (int i = 0; i < RoundsLeft.Count; i++)
+            foreach (var round in RoundsLeft[i])
+                await GamesBracketsRepo.UpdateGamesResultsAsync(round);
+
+        for (int i = 0; i < RoundsRight.Count; i++)
+            foreach (var round in RoundsRight[i])
+                await GamesBracketsRepo.UpdateGamesResultsAsync(round);
+
+        await GamesBracketsRepo.UpdateGamesResultsAsync(RoundFinal[0]);
+
+        await Task.CompletedTask;
+        IsModalOpen = true;
+
+    }
+
+
+}
+
+

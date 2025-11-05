@@ -1,0 +1,135 @@
+﻿@page "/useradmin"
+@rendermode InteractiveServer
+
+<h3>UserAdmin</h3>
+
+@using PoolApp.Infrastructure.Data;
+@using PoolApp.Domain.EntitiesBrackets;
+@using PoolApp.Domain.EntitiesUsers;
+@using PoolApp.Application.Interfaces;
+@using Microsoft.EntityFrameworkCore;
+
+@inject IGamesGroupsRepo GamesGroupsRepo
+@inject IGamesBracketsRepo GamesBracketsRepo
+@inject IUsersRepo UsersRepo
+
+@if (allusersList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone#</th>
+                <th>Generate Recovery Code</th>
+                <th>Delete User</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in allusersList)
+            {
+                <tr>
+                    <td>@user.Name</td>
+                    <td>
+                        @(user.Phone is not null && user.Phone.Length > 4
+                                                            ? new string('*', user.Phone.Length - 4) + user.Phone[^4..]
+                                                            : user.Phone)
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => GenerateRecoveryCode(user)">Generate</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => DeleteUser(user)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+}
+
+
+@if (IsModalOpen)
+{
+    <div style="position: fixed; top: 0; left: 0; z-index: 9999;">
+        <div class="modal-overlay" @onclick="CloseModal">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <h4>Success</h4>
+                <p>@modalText</p>
+                <button class="save-btn" @onclick="CloseModal">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    private bool IsModalOpen { get; set; }
+    private void CloseModal() => IsModalOpen = false;
+    private string modalText = "";
+
+
+    private List<Users> allusersList = new List<Users>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userGroupsGuess = await GamesGroupsRepo.GetAllUsersGuess()
+                          .ToListAsync();
+
+        var userBracketsGuess = await GamesBracketsRepo.GetAllUsersGuess()
+                         .ToListAsync();
+
+        var gamesGroup = await GamesGroupsRepo.GetAllGames()
+                      .ToListAsync();
+
+        var gamesBracket = await GamesBracketsRepo.GetAllGames()
+       .ToListAsync();
+
+        allusersList = (await UsersRepo.GetAllUsersInfo())
+            .ToList();
+
+        //await UsersRepo.SaveUsersPoints(allusers);
+
+    }
+
+    private async Task GenerateRecoveryCode(Users user)
+    {
+        var random = new Random();
+        int recoveryCode = random.Next(100000, 1000000);
+        user.RecoveryCode = recoveryCode.ToString();
+
+        bool ok = false;
+        ok = await UsersRepo.UpdateUserInfo(user);
+
+        if(!ok)
+            return;
+        modalText = $"User {user.Name} Recovery Code: {recoveryCode}";
+        IsModalOpen = true;
+
+
+    }
+
+    private async Task DeleteUser(Users user)
+    {
+        bool ok=false;
+
+        ok =  await UsersRepo.DeleteUser(user);
+        if (!ok)
+            return;
+        await GamesBracketsRepo.DeleteUsersGuessAsync(user.id);
+        await GamesGroupsRepo.DeleteUsersGuessAsync(user.id);
+        
+
+        modalText = $"User {user.Name} Deleted Successfully";
+        IsModalOpen = true;
+
+        allusersList = (await UsersRepo.GetAllUsersInfo())
+                        .ToList();
+
+
+    }
+}

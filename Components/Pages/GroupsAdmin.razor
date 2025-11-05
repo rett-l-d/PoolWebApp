@@ -1,0 +1,134 @@
+﻿@page "/groupsadmin"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore;
+@using PoolApp.Domain.EntitiesGroups;
+@using PoolApp.Infrastructure.Data;
+@using PoolApp.Application.Interfaces;
+
+@inject IGamesGroupsRepo GamesGroupsRepo;
+@inject PoolApp.Services.UserState userState
+@inject NavigationManager NavManager
+
+<div>  <button class="save-btn" @onclick="SaveResults">Save Scores</button></div>
+<div style="height:20px;"></div>
+<div>
+    <h2>World Cup Groups</h2>
+    <p>Admin Results</p>
+</div>
+<div class="group-container">
+    <h3>Group A Matches</h3>
+    <ul>
+        @foreach (var match in gamesGroupA)
+        {
+            <li>
+                <div class="match-info">
+                    <strong>@match.MatchDateTime.ToString()</strong> —
+                    @match.HomeTeam.Name
+                    <input type="number" min="0" class="score-input"
+                    @bind="match.HomeScore" />
+                    vs
+                    @match.AwayTeam.Name
+                    <input type="number" min="0" class="score-input"
+                    @bind="match.AwayScore" />
+
+                </div>
+
+            </li>
+        }
+    </ul>
+</div>
+<div style="height:20px;"></div>
+<div class="group-container">
+    <h3>Group B Matches</h3>
+    <ul>
+        @foreach (var match in gamesGroupB)
+        {
+            <li>
+                <div class="match-info">
+                    <strong>@match.MatchDateTime.ToString()</strong> —
+                    @match.HomeTeam.Name
+                    <input type="number" min="0" class="score-input"
+                    @bind="match.HomeScore" />
+                    vs
+                    @match.AwayTeam.Name
+                    <input type="number" min="0" class="score-input"
+                    @bind="match.AwayScore" />
+
+                </div>
+
+            </li>
+        }
+    </ul>
+</div>
+
+@if (IsModalOpen)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h4>Sucess</h4>
+            <p>Scores Saved</p>
+            <button class="save-btn" @onclick="CloseModal">Close</button>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<GamesGroups> gamesGroupA = new List<GamesGroups>();
+    private List<GamesGroups> gamesGroupB = new List<GamesGroups>();
+    private List<GamesGroups> gamesGroupC = new List<GamesGroups>();
+    private List<GamesGroups> gamesGroupD = new List<GamesGroups>();
+
+    private bool IsModalOpen { get; set; }
+    private void CloseModal() => IsModalOpen = false;
+
+
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (userState.userid == 0)
+        {
+            NavManager.NavigateTo("/userauth");
+        }
+        else
+        {
+            PopulateData();
+        }
+
+    }
+
+    private async void PopulateData()
+    {
+        var gamesGroup = await GamesGroupsRepo.GetAllGames()
+                    .Include(g => g.HomeTeam)
+                    .Include(g => g.AwayTeam)
+                    .ToListAsync();
+
+
+        gamesGroupA = gamesGroup.Where(g => g.GroupID == "A").ToList();
+        gamesGroupB = gamesGroup.Where(g => g.GroupID == "B").ToList();
+
+    }
+
+
+    private async Task SaveResults()
+    {
+
+        foreach (var game in gamesGroupA)
+            await GamesGroupsRepo.UpdateGamesResultsAsync(game);
+        foreach (var game in gamesGroupB)
+            await GamesGroupsRepo.UpdateGamesResultsAsync(game);
+
+
+        await Task.CompletedTask;
+        IsModalOpen = true;
+
+
+    }
+
+
+}

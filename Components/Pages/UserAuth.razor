@@ -1,0 +1,103 @@
+﻿@page "/userauth"
+@rendermode InteractiveServer
+
+@using PoolApp.Application.Interfaces;
+
+@inject IUsersRepo UsersRepo
+@inject PoolApp.Services.UserState userState
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+
+<h3>Login</h3>
+
+@if (verified == null)
+{
+    <div style="display: flex; flex-direction: column; width: 200px; gap: 16px;">
+        <input @bind="userPhone" placeholder="Phone" required />
+        <input @bind="userCode" placeholder="6-digit code" maxlength="6" required />
+
+        <button style="width: 80px;" @onclick="VerifyLogin">Login</button>
+
+        <a href="recovery" style="text-decoration: underline; color: #0d6efd;">Recover Access</a>
+    </div>
+}
+else
+{
+    <p class="@resultClass">@verified</p>
+}
+
+@code {
+    private string? userPhone;
+    private string? userCode;
+    private string? verified;
+    private string? resultClass;
+
+
+    private async Task VerifyLogin()
+    {
+        var user = await UsersRepo.GetByPhoneAsync(userPhone!);
+
+
+
+        if (user == null)
+        {
+            verified = "❌ User not found.";
+            resultClass = "text-danger";
+
+            StateHasChanged(); // update UI immediately
+
+            // clear inputs
+            userCode = string.Empty;
+            userPhone = string.Empty;
+
+            // wait a bit before redirect
+            await Task.Delay(2000);
+            verified = null;
+            NavManager.NavigateTo("/userauth");
+            return;
+        }
+
+        bool ok = UsersRepo.VerifyUserAuthenticatorCode(user, userCode!);
+        if (ok)
+        {
+            verified = "✅ Login successful!";
+            resultClass = "text-success";
+
+            // await userState.SaveAsync(user.id);
+            //  userState.SetUser(user.id);
+            //StateHasChanged();
+            userState.userid = user.id;
+            userState.Name = user.Name;
+            userState.NotifyStateChanged();
+
+            // clear inputs
+            userCode = string.Empty;
+            userPhone = string.Empty;
+
+            // wait a bit before redirect
+            await Task.Delay(2000);
+            verified = null;
+            NavManager.NavigateTo("/");
+            return;
+        }
+        else
+        {
+            verified = "❌ Invalid code.";
+            resultClass = "text-danger";
+
+            // clear inputs
+            userCode = string.Empty;
+            userPhone = string.Empty;
+
+            // wait a bit before redirect
+            await Task.Delay(2000);
+            verified = null;
+            NavManager.NavigateTo("/userauth");
+            return;
+        }
+    }
+}
+
+
+
+

@@ -1,0 +1,132 @@
+﻿@page "/ranking"
+@rendermode InteractiveServer
+@using PoolApp.Infrastructure.Data;
+@using PoolApp.Domain.EntitiesBrackets;
+@using PoolApp.Domain.EntitiesUsers;
+@using PoolApp.Application.Interfaces;
+@using Microsoft.EntityFrameworkCore;
+
+@inject IGamesGroupsRepo GamesGroupsRepo
+@inject IGamesBracketsRepo GamesBracketsRepo
+@inject IUsersRepo UsersRepo
+@inject PoolApp.Services.UserState userState
+
+@if (allusersList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone#</th>
+                <th>Points</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in allusersList)
+            {
+                <tr class="@(user.Name == userState.Name  ? "table-success" : "")">
+                    <td>@user.Name</td>
+                    <td>
+                        @(user.Phone is not null && user.Phone.Length > 4
+                            ? new string('*', user.Phone.Length - 4) + user.Phone[^4..]
+                            : user.Phone)
+                    </td>
+                    <td>@(user.Points ?? 0)</td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+@code {
+    private List<Users> allusersList = new List<Users>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userGroupsGuess = await GamesGroupsRepo.GetAllUsersGuess()
+                          .ToListAsync();
+
+        var userBracketsGuess = await GamesBracketsRepo.GetAllUsersGuess()
+                         .ToListAsync();
+
+        var gamesGroup = await GamesGroupsRepo.GetAllGames()
+                      .ToListAsync();
+
+        var gamesBracket = await GamesBracketsRepo.GetAllGames()
+       .ToListAsync();
+
+        allusersList = await UsersRepo.GetAllUsersInfo();
+
+
+
+
+        foreach (var user in allusersList)
+        {
+            user.Points = 0;
+            foreach (var guess in userGroupsGuess)
+            {
+                foreach (var game in gamesGroup)
+                {
+                    if (guess.MatchID == game.id && guess.UserID == user.id)
+                    {
+                        if (guess.HomeScore == game.HomeScore && guess.AwayScore == game.AwayScore)
+                        {
+                            user.Points = (user.Points ?? 0) + 3;
+                        }
+                        else if (guess.HomeScore >= game.HomeScore && game.HomeScore > game.AwayScore && !(guess.AwayScore == game.AwayScore) ||
+                                guess.AwayScore >= game.AwayScore && game.AwayScore > game.HomeScore && !(guess.HomeScore == game.HomeScore))
+                        {
+                            user.Points = (user.Points ?? 0) + 1;
+                        }
+                    }
+                }
+
+            }
+
+            foreach (var guess in userBracketsGuess)
+            {
+                foreach (var game in gamesBracket)
+                {
+                    if (guess.MatchID == game.id && guess.UserID == user.id)
+                    {
+                        if (guess.HomeScore == game.HomeScore && guess.AwayScore == game.AwayScore)
+                        {
+                            user.Points = (user.Points ?? 0) + 3;
+                        }
+                        else if (guess.HomeScore >= game.HomeScore && game.HomeScore > game.AwayScore && !(guess.AwayScore == game.AwayScore) ||
+                                guess.AwayScore >= game.AwayScore && game.AwayScore > game.HomeScore && !(guess.HomeScore == game.HomeScore))
+                        {
+                            user.Points = (user.Points ?? 0) + 1;
+                        }
+                    }
+                }
+
+            }
+
+            if (user.id == userState.userid)
+            {
+                userState.Points = user.Points ?? 0;
+            }
+
+        }
+
+   
+
+         
+        allusersList = allusersList.OrderByDescending(d => d.Points).ToList();
+
+
+        //await UsersRepo.SaveUsersPoints(allusers);
+
+
+
+
+    }
+}

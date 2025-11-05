@@ -5,17 +5,20 @@
     gap: 60px; /* space between left/final/right */
     margin-top: 40px;
     margin-left: -50px;
+   
 }
 
 .bracket {
     display: flex;
     flex-direction: row;
     gap: 40px; /* space between rounds */
+    margin-bottom: 40px;
 }
 
     /* Left side → rounds flow left to right */
     .bracket.left {
         flex-direction: row;
+        margin-left: 20px;
     }
 
     /* Right side ← rounds flow right to left */
@@ -29,6 +32,7 @@
     justify-content: center;
     gap: 40px;
 }
+
 
 .match {
     position: relative;
@@ -48,10 +52,11 @@
 
     .team:last-child {
         border-bottom: none;
+       
     }
 
 /* Connectors */
-.bracket.left .round .match::after {
+/*.bracket.left .round .match::after {
     content: "";
     position: absolute;
     top: 50%;
@@ -69,7 +74,21 @@
     width: 30px;
     height: 2px;
     background: #333;
+}*/
+
+.save-btn {
+    padding: 4px 8px;
+    border: none;
+    background: #007BFF;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
 }
+
+    .save-btn:hover {
+        background: #0056b3;
+    }
+
 
 .final-match {
     display: flex;
@@ -82,4 +101,33 @@
     padding: 3px;
     text-align: center;
     margin: 0 5px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    max-width: 90%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.match-label {
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 10px; /* space between label and match */
+    text-align: center; /* centers the text above the match */
 }

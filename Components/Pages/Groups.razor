@@ -1,131 +1,203 @@
-﻿@page "/Groups"
+﻿@page "/groups"
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 @using Microsoft.EntityFrameworkCore;
-@using PoolApp.Domain.Entities
+@using PoolApp.Domain.EntitiesGroups
+@using PoolApp.Domain.EntitiesUsers
 @using PoolApp.Infrastructure.Data
 @using PoolApp.Application.Interfaces
 
-@inject IGamesRepo GamesRepo
+@inject IGamesGroupsRepo GamesGroupsRepo
+@inject IUsersRepo UsersRepo
+@inject PoolApp.Services.UserState userState
+@inject NavigationManager NavManager
 
 
-<div class="group-container">
-    <button class="save-btn" @onclick="SaveGuessess">Save Scores</button>
-    <div>
-        <h2>World Cup Groups</h2>
-        <p>Enter your score predictions for each match below:</p>
-    </div>
-    <h3>Group A Matches</h3>
-    <ul>
-        @foreach (var match in gamesGroup[1])
-        {
-            <li>
-                <div class="match-info">
-                    <strong>@match.MatchDateTime.ToString()</strong> —
-                    @match.HomeTeam.Name
-                    <input type="number" min="0" class="score-input"
-                    @bind="match.Usersguess.HomeScore" />
-                    vs
-                    @match.AwayTeam.Name
-                    <input type="number" min="0" class="score-input"
-                    @bind="match.Usersguess.AwayScore" />
-                    <strong>Results</strong>
-                    @((match.HomeScore?.ToString()) ?? "-") vs @((match.AwayScore?.ToString()) ?? "-")
-                </div>
 
-            </li>
-        }
-    </ul>
-
-    <h3>Group B Matches</h3>
-    <ul>
-        @foreach (var match in gamesGroup[2])
-        {
-            <li>
-                <div class="match-info">
-                    <strong>@match.MatchDateTime.ToString()</strong> —
-                    @match.HomeTeam.Name
-                    <input type="number" min="0" class="score-input"
-                    @bind="match.Usersguess.HomeScore" />
-                    vs
-                    @match.AwayTeam.Name
-                    <input type="number" min="0" class="score-input"
-                    @bind="match.Usersguess.AwayScore" />
-                    <strong>Results</strong>
-                    @((match.HomeScore?.ToString()) ?? "-") vs @((match.AwayScore?.ToString()) ?? "-")
-                </div>
-
-            </li>
-        }
-    </ul>
+<div>  <button class="save-btn" @onclick="SaveGuessess">Save Scores</button></div>
+<div style="height:20px;"></div>
+<div>
+    <h2>Tournament Groups</h2>
+    <p>Enter your score predictions for each match below:</p>
 </div>
+@if (!(gamesGroupA==null)&& !(gamesGroupB==null))
+{
+    <div class="group-container">
+        <h3>Group A Matches</h3>
+        <ul>
+            @foreach (var match in gamesGroupA)
+            {
+                <li>
+                    <div class="match-info">
+                        <strong>@match.MatchDateTime.ToString()</strong> —
+                        @match.HomeTeam.Name
+                        <input type="number" min="0" class="score-input"
+                        @bind="match.Usersguess.HomeScore" />
+                        vs
+                        @match.AwayTeam.Name
+                        <input type="number" min="0" class="score-input"
+                        @bind="match.Usersguess.AwayScore"/>
+                        <strong>Results</strong>
+                        @((match.HomeScore?.ToString()) ?? "-") vs @((match.AwayScore?.ToString()) ?? "-")
+                        @if (match.Usersguess.HomeScore == match.HomeScore && match.AwayScore == match.Usersguess.AwayScore)
+                        {
+                            <span>  - Points: 3 </span>
+                        }
+                        else if (match.Usersguess.HomeScore > match.HomeScore && match.HomeScore > match.AwayScore && !(match.Usersguess.AwayScore == match.AwayScore) ||
+                        match.Usersguess.AwayScore > match.AwayScore && match.AwayScore > match.HomeScore && !(match.Usersguess.HomeScore==match.HomeScore))
+                        {
+                            <span>  - Points: 1 </span>
+                        }
+                        else
+                        {
+                            <span>  - Points: 0 </span>
+                        }
+                    </div>
+
+                </li>
+            }
+        </ul>
+    </div>
+    <div style="height:20px;"></div>
+    <div class="group-container">
+        <h3>Group B Matches</h3>
+        <ul>
+            @foreach (var match in gamesGroupB)
+            {
+                <li>
+                    <div class="match-info">
+                        <strong>@match.MatchDateTime.ToString()</strong> —
+                        @match.HomeTeam.Name
+                        <input type="number" min="0" class="score-input"
+                        @bind="match.Usersguess.HomeScore"/>
+                        vs
+                        @match.AwayTeam.Name
+                        <input type="number" min="0" class="score-input"
+                        @bind="match.Usersguess.AwayScore"/>
+                        <strong>Results</strong>
+                        @((match.HomeScore?.ToString()) ?? "-") vs @((match.AwayScore?.ToString()) ?? "-")
+                        @if (match.Usersguess.HomeScore == match.HomeScore && match.AwayScore == match.Usersguess.AwayScore)
+                        {
+                            <span>  - Points: 3 </span>
+                        }
+                        else if (match.Usersguess.HomeScore >= match.HomeScore && match.HomeScore > match.AwayScore && !(match.Usersguess.AwayScore == match.AwayScore) ||
+                        match.Usersguess.AwayScore >= match.AwayScore && match.AwayScore > match.HomeScore && !(match.Usersguess.HomeScore == match.HomeScore))
+                        {
+                            <span>  - Points: 1 </span>
+                        }
+                        else
+                        {
+                            <span>  - Points: 0 </span>
+                        }
+                    </div>
+
+                </li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <p><em>Loading...</em></p>
+}
+@if (IsModalOpen)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h4>Sucess</h4>
+            <p>Scores Saved</p>
+            <button class="save-btn" @onclick="CloseModal">Close</button>
+        </div>
+    </div>
+}
 
 @code {
-    private int userID = 1;
-    private List<Games>[] gamesGroup = new List<Games>[5];
-    private List<UsersGuess> usersGuess = new List<UsersGuess>();
+
+    private List<GamesGroups> gamesGroupA = new List<GamesGroups>();
+    private List<GamesGroups> gamesGroupB = new List<GamesGroups>();
+    private List<GamesGroups> gamesGroupC = new List<GamesGroups>();
+    private List<GamesGroups> gamesGroupD = new List<GamesGroups>();
+    private List<Users> allusers = new List<Users>();
+    private string? userName;
+
+    private bool IsModalOpen { get; set; }
+    private void CloseModal() => IsModalOpen = false;
+
+
+
 
 
     protected override async Task OnInitializedAsync()
     {
-        usersGuess = await GamesRepo.GetAllUsersGuess()
-                          .Where(ug => ug.UserID == userID)
-                          .ToListAsync();
-
-
-        for (int i = 1; i < gamesGroup.Length; i++)
+        if (userState.userid == 0)
         {
-            gamesGroup[i] = await GamesRepo.GetAllGames()
-                      .Include(g => g.HomeTeam)
-                      .Include(g => g.AwayTeam)
-                      .Where(g => g.GroupID == i)
-                      .ToListAsync();
-
-
-            // Link UsersGuess to corresponding Games
-            foreach (var match in gamesGroup[i])
-            {
-                foreach (var guess in usersGuess)
-                {
-                    if (match.id == guess.MatchID)
-                    {
-                        match.Usersguess = guess;
-                        break; // Exit the inner loop once a match is found
-                    }
-                }
-                ;
-
-                if (match.Usersguess == null)
-                {
-                    match.Usersguess = new UsersGuess
-                        {
-                            MatchID = match.id,
-                            UserID = userID
-                        };
-                }
-            }
+            NavManager.NavigateTo("/userauth");
         }
-
+        else
+        {
+            PopulateData();
+        }
 
     }
 
+    private async void PopulateData()
+    {
+        var allusers = await UsersRepo.GetAllUsersInfo();
 
 
+        userName = allusers.FirstOrDefault(c => c.id == userState.userid)?.Name ?? "Guest";
+
+
+        var userGuess = await GamesGroupsRepo.GetAllUsersGuess()
+                          .Where(ug => ug.UserID == userState.userid)
+                          .ToListAsync();
+
+
+
+        var gamesGroup = await GamesGroupsRepo.GetAllGames()
+                      .Include(g => g.HomeTeam)
+                      .Include(g => g.AwayTeam)
+                      .ToListAsync();
+
+        //To prevent null userguess errors check ff the DB already has a Usersguess, use it
+        //if not create new empty instance
+        var gameswithGuess = gamesGroup
+                       .Select(d => new GamesGroups
+                           {
+                               id = d.id,
+                               GroupID = d.GroupID,
+                               HomeTeam = d.HomeTeam,
+                               AwayTeam = d.AwayTeam,
+                               HomeTeamID = d.HomeTeamID,
+                               AwayTeamID = d.AwayTeamID,
+                               HomeScore = d.HomeScore,
+                               AwayScore = d.AwayScore,
+                               MatchDateTime = d.MatchDateTime,
+                               Usersguess = d.Usersguess ?? userGuess
+                                           .FirstOrDefault(ug => ug.MatchID == d.id)
+                                           ?? new UsersGuessGroups
+                                           {
+                                               MatchID = d.id,
+                                           }
+                           })
+                       .ToList();
+
+        gamesGroupA = gameswithGuess.Where(g => g.GroupID == "A").ToList();
+        gamesGroupB = gameswithGuess.Where(g => g.GroupID == "B").ToList();
+    }
 
 
     private async Task SaveGuessess()
     {
-        for (var i = 1; i < gamesGroup.Length; i++)
-        {
-            // Link UsersGuess to corresponding Games
-            foreach (var guess in gamesGroup[i])
-            {
 
-                await GamesRepo.UpdateUsersGuessAsync(guess.Usersguess, userID);
-            }
-        }
+        foreach (var guess in gamesGroupA)
+            await GamesGroupsRepo.UpdateUsersGuessAsync(guess.Usersguess, userState.userid);
+        foreach (var guess in gamesGroupB)
+            await GamesGroupsRepo.UpdateUsersGuessAsync(guess.Usersguess, userState.userid);
+
 
         await Task.CompletedTask;
+        IsModalOpen = true;
 
 
     }

@@ -11,12 +11,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Domain\Entities.cs" />
+    <None Remove="Data\DB\PoolDB.db" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Data\DB\PoolDB.db" />
+    <Content Include="Domain\EntitiesGroups.cs" />
     <Content Include="Infrastructure\Data\AppDbContext.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="wwwroot\css\" />
+    <Folder Include="wwwroot\Images\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +30,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="9.0.8" />
+    <PackageReference Include="Otp.NET" Version="1.4.0" />
+    <PackageReference Include="QRCoder" Version="1.7.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
   </ItemGroup>
 

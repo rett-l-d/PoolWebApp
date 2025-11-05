@@ -3,6 +3,8 @@ using PoolApp.Infrastructure.Data;
 using PoolApp.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using static PoolApp.Infrastructure.Data.AppDbContext;
+using PoolApp.Services;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 namespace PoolApp;
 
@@ -17,8 +19,11 @@ public class Program
 
 
         // Register Classess
-        builder.Services.AddScoped<IGamesRepo, GamesRepo>();
-        builder.Services.AddScoped<UserState>();
+        builder.Services.AddScoped<IGamesGroupsRepo, GamesGroupsRepo>();
+        builder.Services.AddScoped<IGamesBracketsRepo, GamesBracketsRepo>();
+        builder.Services.AddScoped<IUsersRepo, UsersRepo>();
+        builder.Services.AddSingleton<UserState>();
+       
 
         // Add services to the container.
         builder.Services.AddRazorComponents()

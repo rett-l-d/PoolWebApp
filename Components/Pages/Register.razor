@@ -1,0 +1,70 @@
+﻿@page "/register"
+@rendermode InteractiveServer
+
+@using PoolApp.Application.Interfaces;
+@using PoolApp.Domain.EntitiesUsers;
+
+@inject IUsersRepo UsersRepo
+
+<h3>Register</h3>
+
+<p>@verified</p>
+
+@if (qrImageBase64 == null)
+{
+    <div style="display: flex; flex-direction: column; width: 200px; gap: 16px;">
+        <input @bind="userName" placeholder="Full Name or NickName" />
+        <input @bind="userPhone" placeholder="Phone" />
+        <button style="width: 80px;" @onclick="RegisterUser">Register</button>
+    </div>
+}
+else
+{
+    <h4>Scan this code in any OTP Authenticator:</h4>
+    <img src="@qrImageBase64" width="200" height="200" />
+    <p>Or enter this secret manually: <strong>@user.AuthenticatorSecret</strong></p>
+}
+
+
+
+
+
+@code {
+    private string? userName;
+    private string? userPhone;
+    private string? qrImageBase64;
+    private Users user = new();
+
+    private string? verified;
+    private string? resultClass;
+
+    private async Task RegisterUser() { 
+
+
+        if (userName == null || userPhone == null)
+        {
+            verified = "❌ Fill both fields";
+            resultClass = "text-danger";
+            return;
+        }
+
+
+
+        if (!(await UsersRepo.InsertNewUser(user))) 
+        { 
+            verified = "❌ Phone in use already"; 
+            resultClass = "text-danger";
+            return;
+        }
+        else
+        {
+            user = new Users { Name = userName, Phone = userPhone };
+            qrImageBase64 = await UsersRepo.SetupAuthenticatorAsync(user);
+            verified = "✅ User created!";
+            resultClass = "text-success";
+        }
+
+       
+    }
+       
+}

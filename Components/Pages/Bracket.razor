@@ -1,95 +1,258 @@
 ﻿@page "/bracket"
+@rendermode InteractiveServer
+@using PoolApp.Infrastructure.Data;
+@using PoolApp.Domain.EntitiesBrackets;
+@using PoolApp.Domain.EntitiesUsers;
+@using PoolApp.Application.Interfaces;
+@using Microsoft.EntityFrameworkCore;
 
+@inject IGamesBracketsRepo GamesBracketsRepo
+@inject IUsersRepo UsersRepo
+@inject PoolApp.Services.UserState userState
+@inject NavigationManager NavManager
 
-<h2 class="text-center">Tournament Bracket</h2>
+<button class="save-btn" @onclick="SaveGuessess">Save Scores</button>
+<div style="height:20px;"></div>
 
-<div class="bracket-container">
-    <!-- LEFT side -->
-    <div class="bracket left">
-        @for (int round = 0; round < Rounds.Count; round++)
-        {
-            <div class="round">
-                @foreach (var match in Rounds[round])
-                {
-                    <div class="match">
-                        <div class="team">
-                            @match.HomeTeam.Name <input type="text"  class="score-input"/>
+<div>
+    <h2>Tournament Brackets</h2>
+    <p>Enter your score predictions for each match below:</p>
+</div>
+@if (!(RoundsLeft == null) && !(RoundsRight == null) && !(RoundFinal[0] == null))
+{
+    <div class="bracket-container">
+        <!-- LEFT side -->
+        <div class="bracket left">
+            @for (int round = 0; round < RoundsLeft.Count; round++)
+            {
+                <div class="round">
+                    @foreach (var match in RoundsLeft[round])
+                    {
+                        <div class="match">
+                            <div class="team">
+                                @match.HomeTeam.Name <input type="text"
+                                @bind="match.Usersguess.HomeScore" class="score-input" />
+                                @((match.HomeScore?.ToString()) ?? "-")
+                            </div>
+                            <div class="team">
+                                @match.AwayTeam.Name <input type="text"
+                                @bind="match.Usersguess.AwayScore" class="score-input" />
+                                @((match.AwayScore?.ToString()) ?? "-")
+                            </div>
+                            @if (match.Usersguess.HomeScore == match.HomeScore && match.AwayScore == match.Usersguess.AwayScore)
+                            {
+                                <span>  Points: 3 </span>
+                            }
+                            else if (match.Usersguess.HomeScore > match.HomeScore && match.HomeScore > match.AwayScore && !(match.Usersguess.AwayScore == match.AwayScore) ||
+                            match.Usersguess.AwayScore > match.AwayScore && match.AwayScore > match.HomeScore && !(match.Usersguess.HomeScore == match.HomeScore))
+                            {
+                                <span>  Points: 1 </span>
+                            }
+                            else
+                            {
+                                <span>  Points: 0 </span>
+                            }
                         </div>
-                        <div class="team">@match.AwayTeam.Name <input type="text"  class="score-input" /></div>
-                    </div>
-                }
-            </div>
-        }
-    </div>
+                    }
+                </div>
+            }
 
-    <!-- FINAL in the center -->
-    <div class="final-match">
-        <div class="match">
-            <div class="team">Winner Left</div>
-            <div class="team">Winner Right</div>
+        </div>
+
+        <!-- FINAL in the center -->
+        <div class="final-match-container">
+            <p class="match-label">Final Match</p>
+            <div class="final-match">
+                <div class="match">
+                    <div class="team">
+                        @RoundFinal[0].HomeTeam.Name
+                        <input type="text" @bind="RoundFinal[0].Usersguess.AwayScore" class="score-input" />
+                        @((RoundFinal[0].HomeScore?.ToString()) ?? "-")
+                    </div>
+                    <div class="team">
+                        @RoundFinal[0].AwayTeam.Name
+                        <input type="text" @bind="RoundFinal[0].Usersguess.HomeScore" class="score-input" />
+                        @((RoundFinal[0].AwayScore?.ToString()) ?? "-")
+                    </div>
+                    @if (RoundFinal[0].Usersguess.HomeScore == RoundFinal[0].HomeScore && RoundFinal[0].AwayScore == RoundFinal[0].Usersguess.AwayScore)
+                    {
+                        <span>  Points: 3 </span>
+                    }
+                    else if (RoundFinal[0].Usersguess.HomeScore > RoundFinal[0].HomeScore && RoundFinal[0].HomeScore > RoundFinal[0].AwayScore && !(RoundFinal[0].Usersguess.AwayScore == RoundFinal[0].AwayScore) ||
+                    RoundFinal[0].Usersguess.AwayScore > RoundFinal[0].AwayScore && RoundFinal[0].AwayScore > RoundFinal[0].HomeScore && !(RoundFinal[0].Usersguess.HomeScore == RoundFinal[0].HomeScore))
+                    {
+                        <span>  Points: 1 </span>
+                    }
+                    else
+                    {
+                        <span>  Points: 0 </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT side -->
+        <div class="bracket right">
+            @for (int round = 0; round < RoundsRight.Count; round++)
+            {
+                <div class="round">
+                    @foreach (var match in RoundsRight[round])
+                    {
+                        <div class="match">
+                            <div class="team">
+                                @match.HomeTeam.Name
+                                <input type="text" @bind="match.Usersguess.HomeScore" class="score-input" />
+                                @((match.HomeScore?.ToString()) ?? "-")
+                            </div>
+                            <div class="team">
+                                @match.AwayTeam.Name
+                                <input type="text" @bind="match.Usersguess.AwayScore" class="score-input" />
+                                @((match.AwayScore?.ToString()) ?? "-")
+                            </div>
+                            @if (match.Usersguess.HomeScore == match.HomeScore && match.AwayScore == match.Usersguess.AwayScore)
+                            {
+                                <span>  Points: 3 </span>
+                            }
+                            else if (match.Usersguess.HomeScore > match.HomeScore && match.HomeScore > match.AwayScore && !(match.Usersguess.AwayScore == match.AwayScore) ||
+                            match.Usersguess.AwayScore > match.AwayScore && match.AwayScore > match.HomeScore && !(match.Usersguess.HomeScore == match.HomeScore))
+                            {
+                                <span>  Points: 1 </span>
+                            }
+                            else
+                            {
+                                <span>  Points: 0 </span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
+}
+else
+{
+    <p>Loading...</p>
+}
 
-    <!-- RIGHT side -->
-    <div class="bracket right">
-        @for (int round = 0; round < Rounds.Count; round++)
-        {
-            <div class="round">
-                @foreach (var match in Rounds[round])
-                {
-                    <div class="match">
-                        <div class="team">@match.HomeTeam.Name</div>
-                        <div class="team">@match.AwayTeam.Name</div>
-                    </div>
-                }
-            </div>
-        }
+
+
+@if (IsModalOpen)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h4>Sucess</h4>
+            <p>Scores Saved</p>
+            <button class="save-btn" @onclick="CloseModal">Close</button>
+        </div>
     </div>
-</div>
-
+}
 
 @code {
-    // Data structure: list of rounds, each with list of matches
-    private List<List<Games>> Rounds = new();
 
-    protected override void OnInitialized()
+
+    private List<List<GamesBrackets>> RoundsLeft = new List<List<GamesBrackets>>();
+    private List<List<GamesBrackets>> RoundsRight = new List<List<GamesBrackets>>();
+    private List<GamesBrackets> RoundFinal = new List<GamesBrackets>();
+    private List<Users> allusers = new List<Users>();
+
+    private bool IsModalOpen;
+    private void CloseModal() => IsModalOpen = false;
+    private string? userName;
+
+
+    protected override async Task OnInitializedAsync()
     {
-        // Example tournament: 8 teams -> 4 matches -> 2 matches -> 1 final
-        var round1 = new List<Games>
+        if (userState.userid == 0)
         {
-            new Games { HomeTeam = new Teams { Name = "Team A1" }, AwayTeam = new Teams { Name = "Team A2" } },
-            new Games { HomeTeam = new Teams { Name = "Team B1" }, AwayTeam = new Teams { Name = "Team B2" } },
-            new Games { HomeTeam = new Teams { Name = "Team C1" }, AwayTeam = new Teams { Name = "Team C2" } },
-            new Games { HomeTeam = new Teams { Name = "Team D1" }, AwayTeam = new Teams { Name = "Team D2" } }
-        };
+            NavManager.NavigateTo("/userauth");
+        }
+        else
+        {
+            PopulateData();
+        }
 
-        var round2 = new List<Games>
-        {
-            new Games { HomeTeam = new Teams { Name = "Winner A" }, AwayTeam = new Teams { Name = "Winner B" } },
-            new Games { HomeTeam = new Teams { Name = "Winner C" }, AwayTeam = new Teams { Name = "Winner D" } }
-        };
+    }
 
-        var final = new List<Games>
-        {
-            new Games { HomeTeam = new Teams { Name = "Winner Semifinal 1" }, AwayTeam = new Teams { Name = "Winner Semifinal 2" } }
-        };
+    private async void PopulateData()
+    {
+        var allusers = await UsersRepo.GetAllUsersInfo();
+
+
+        userName = allusers.FirstOrDefault(c => c.id == userState.userid)?.Name ?? "Guest";
+
+        var userGuess = await GamesBracketsRepo.GetAllUsersGuess()
+                         .Where(ug => ug.UserID == userState.userid)
+                         .ToListAsync();
+
+        // Get rounds
+        var allrounds = await GamesBracketsRepo.GetAllGames()
+                    .Include(c => c.HomeTeam)
+                    .Include(c => c.AwayTeam).ToListAsync();
+
+        //To prevent null userguess errors check ff the DB already has a Usersguess, use it
+        //if not create new empty instance
+        var roundswithGuess = allrounds
+                       .Select(d => new GamesBrackets
+                           {
+                               id = d.id,
+                               BracketID = d.BracketID,
+                               HomeTeam = d.HomeTeam,
+                               AwayTeam = d.AwayTeam,
+                               HomeTeamID = d.HomeTeamID,
+                               AwayTeamID = d.AwayTeamID,
+                               HomeScore = d.HomeScore,
+                               AwayScore = d.AwayScore,
+                               MatchDateTime = d.MatchDateTime,
+                               Usersguess = d.Usersguess ??
+                                                    userGuess.FirstOrDefault(c => c.MatchID == d.id) ??
+                                                    new UsersGuessBrackets() { MatchID = d.id }
+                           });
+
+
+
+        var round16_left = roundswithGuess.Where(c => c.BracketID == "16L").ToList();
+        var round16_right = roundswithGuess.Where(c => c.BracketID == "16R").ToList();
+
+        var round8_left = roundswithGuess.Where(c => c.BracketID == "8L").ToList();
+        var round8_right = roundswithGuess.Where(c => c.BracketID == "8R").ToList();
+
+        var round4_left = roundswithGuess.Where(c => c.BracketID == "4L").ToList();
+        var round4_right = roundswithGuess.Where(c => c.BracketID == "4R").ToList();
+
+        var round_final = roundswithGuess.Where(c => c.BracketID == "2").ToList();
+
 
         // Store rounds
-        Rounds.Add(round1);
-        Rounds.Add(round2);
-        Rounds.Add(final);
+        RoundsLeft.Add(round16_left);
+        RoundsLeft.Add(round8_left);
+        RoundsLeft.Add(round4_left);
+
+        RoundsRight.Add(round16_right);
+        RoundsRight.Add(round8_right);
+        RoundsRight.Add(round4_right);
+
+
+        RoundFinal = round_final;
     }
 
-    public class Teams
+    private async Task SaveGuessess()
     {
-        public string Name { get; set; } = "";
+        for(int i= 0; i < RoundsLeft.Count; i++)
+            foreach(var round in RoundsLeft[i])
+                await GamesBracketsRepo.UpdateUsersGuessAsync(round.Usersguess, userState.userid);
+
+        for (int i = 0; i < RoundsRight.Count; i++)
+            foreach (var round in RoundsRight[i])
+                await GamesBracketsRepo.UpdateUsersGuessAsync(round.Usersguess, userState.userid);
+
+        await GamesBracketsRepo.UpdateUsersGuessAsync(RoundFinal[0].Usersguess, userState.userid);
+
+        await Task.CompletedTask;
+        IsModalOpen = true;
+
     }
 
-    public class Games
-    {
-        public Teams HomeTeam { get; set; } = new();
-        public Teams AwayTeam { get; set; } = new();
-    }
+
 }
 
 

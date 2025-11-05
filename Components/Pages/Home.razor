@@ -1,7 +1,29 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@inject PoolApp.Services.UserState userState
+@inject NavigationManager NavManager
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Hello, @userState.Name!</h1>
 
-Welcome to your new app.
+<p style="margin-bottom: 1rem; font-weight: bold;">
+    Make your predictions and good luck!
+</p>
+
+<p>
+    Rules for points count:<br />
+    3 - Exact Score<br />
+    1 - Correct Outcome<br />
+    0 - Incorrect Prediction
+</p>
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Code to run on page load
+        if (userState.userid == 0)
+            NavManager.NavigateTo("/userauth");
+    }
+}
